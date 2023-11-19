@@ -575,6 +575,11 @@ void printQuesions(Params *params)
 
 void printAnswers(RES_RECORD answers[],Params *params, int i,sockaddr_in a,in_addr ipv4_addr,in6_addr ipv6_addr)
 {
+	int type;
+	if((type = ntohs(answers[i].resource->type) < 1) || (type = ntohs(answers[i].resource->type) > 28))
+	{
+		return;
+	}
 	printf(" %s., ",answers[i].name);
 
 		switch(ntohs(answers[i].resource->type))
@@ -602,10 +607,11 @@ void printAnswers(RES_RECORD answers[],Params *params, int i,sockaddr_in a,in_ad
 		}
 		printf("IN, ");
 
+		// print TTL
+		printf("%d,",ntohl(answers[i].resource->ttl));
+
 		if( ntohs(answers[i].resource->type) == T_A) //IPv4 address
-		{
-			printf("%d,",ntohl(answers[i].resource->ttl));
-			
+		{			
 				long *p;
 				p=(long*)answers[i].rdata;
 				a.sin_addr.s_addr=(*p);
@@ -615,21 +621,15 @@ void printAnswers(RES_RECORD answers[],Params *params, int i,sockaddr_in a,in_ad
 		}
 
 		if( ntohs(answers[i].resource->type) == T_AAAA) //IPv6 address
-		{
-			printf("%d,",ntohl(answers[i].resource->ttl));
-			
-			struct in6_addr *ipv6_address = (struct in6_addr *)answers[i].rdata;
-
-				char ipv6_str[INET6_ADDRSTRLEN];
-				inet_ntop(AF_INET6, ipv6_address, ipv6_str, INET6_ADDRSTRLEN);
-				printf("%s\n",ipv6_str);
+		{	
+			char ipv6Str[INET6_ADDRSTRLEN];
+			inet_ntop(AF_INET6, answers[i].rdata, ipv6Str, INET6_ADDRSTRLEN);
+			printf("%s\n",ipv6Str);
 			
 		}
 
 		if( ntohs(answers[i].resource->type) == T_CNAME)
 		{
-			printf("%d,",ntohl(answers[i].resource->ttl));
-			
 			long *p;
 			p=(long*)answers[i].rdata;
 			a.sin_addr.s_addr=(*p);
@@ -640,9 +640,6 @@ void printAnswers(RES_RECORD answers[],Params *params, int i,sockaddr_in a,in_ad
 
 		if( ntohs(answers[i].resource->type) == T_PTR) //IPv4 address
 		{
-
-			printf("%d,",ntohl(answers[i].resource->ttl));
-			
 			printf("%s.",answers[i].rdata);
 			
 			printf("\n");
@@ -650,9 +647,6 @@ void printAnswers(RES_RECORD answers[],Params *params, int i,sockaddr_in a,in_ad
 
 		if( ntohs(answers[i].resource->type) == T_NS) //IPv4 address
 		{
-
-			printf("%d,",ntohl(answers[i].resource->ttl));
-			
 			printf("%s.",answers[i].rdata);
 			
 			printf("\n");
