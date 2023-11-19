@@ -39,14 +39,19 @@ void getArgs(int argc, char *argv[], Params *params)
 		// set port number to Params structure
 		if(strcmp(argument,"-h") == 0)
 		{
-			printf("HELP\n");
+			printf("dns [-r] [-x] [-6] -s server [-p port] adresa\n");
 			exit(0);
 		}
 
 		if(strcmp(argument,"-p") == 0)
 		{
 			int index = i;
-			params->port = atoi(argv[++index]);
+			if((params->port = atoi(argv[++index])) == 0)
+			{
+				fprintf(stderr,"Port is not a number\n");
+				exit(1);
+			}
+
 			i++;
 			cont = false;
 		}
@@ -158,8 +163,8 @@ void query(Params *params)
 	// If recursion desired
 	if(params->reversed){
 
-		reversedFormat(params->hostname); // IPv4 reversed address	
-		ChangetoDnsNameFormat(qname , add);
+		// IPv4 reversed address	
+		ChangetoDnsNameFormat(qname , reversedFormat(params->hostname));
 	}
 	else{
 		ChangetoDnsNameFormat(qname , params->hostname);
@@ -169,7 +174,7 @@ void query(Params *params)
 	qinfo =(struct QUESTION*)&buf[sizeof(struct DNS_HEADER) + (strlen((const char*)qname) + 1)];
 
 	qinfo->qtype = htons(params->Q_type); // question type according to command line option
-	qinfo->qclass = htons(1); // IN
+	qinfo->qclass = htons(IN); // Internet
 
 
 	// send question to servers
@@ -372,7 +377,7 @@ void ChangetoDnsNameFormat(unsigned char* dns,char* host)
 }
 
 // get IPv4 reversed format
-void reversedFormat(char* host)
+char* reversedFormat(char* host)
 {
 	char *gfg = host; // get host name
 
@@ -406,6 +411,7 @@ void reversedFormat(char* host)
 	}
 	// append "in-addr.arpa" to the end of thee reversed hostname
 	strcat(add,"in-addr.arpa");
+	return add;
 }
 
 void expandIPv6(const char* compressedIPv6, char* expandedIPv6, size_t expandedIPv6Size) {
@@ -540,7 +546,7 @@ void printInfo(DNS_HEADER *dns)
 void printQuesions(Params *params)
 {
 	if(params->reversed){
-		printf(" %s, ",add);
+		printf(" %s, ",reversedFormat(params->hostname));
 	}
 	else{
 		printf(" %s, ",params->hostname);

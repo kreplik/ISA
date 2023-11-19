@@ -4,6 +4,7 @@
 #include <stdlib.h>
 
 #define T_A 1 //Ipv4 address
+#define IN 1 // Internet
 #define T_NS 2 // NS
 #define T_AAAA 28 // Ipv6
 #define T_CNAME 5 // canonical name
@@ -23,7 +24,7 @@ struct R_DATA
 
 struct in_addr ipv4_addr;
 struct in6_addr ipv6_addr;
-char add[100];
+char add[100]; // reversed address
 char expandedIPv6[60];
 
 //Pointers to resource record contents
@@ -82,11 +83,11 @@ typedef struct
 } QUERY;
 
 void query(Params *params);
-void ChangetoDnsNameFormat (unsigned char*,char*);
-unsigned char* ReadName (unsigned char*,unsigned char*,int*);
+void ChangetoDnsNameFormat (unsigned char* dns,char* host);
+unsigned char* ReadName (unsigned char* reader,unsigned char* buffer,int* count);
 
 void getArgs(int argc, char *argv[], Params *params);
-void reversedFormat(char* host);
+char* reversedFormat(char* host);
 void expandIPv6(const char* compressedIPv6, char* expandedIPv6, size_t expandedIPv6Size);
 
 void printAnswers(RES_RECORD answers[],Params *params, int i,sockaddr_in a,in_addr,in6_addr);
