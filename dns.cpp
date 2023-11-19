@@ -169,7 +169,7 @@ void query(Params *params)
 	qinfo =(struct QUESTION*)&buf[sizeof(struct DNS_HEADER) + (strlen((const char*)qname) + 1)];
 
 	qinfo->qtype = htons(params->Q_type); // question type according to command line option
-	qinfo->qclass = htons(1);
+	qinfo->qclass = htons(1); // IN
 
 
 	// send question to servers
