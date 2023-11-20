@@ -40,7 +40,10 @@ struct RES_RECORD
 };
 
 
-//DNS header structure
+/* DNS_HEADER
+* Source: https://www.binarytides.com/dns-query-code-in-c-with-linux-sockets/
+* Author: Silver Moon
+*/
 struct DNS_HEADER
 {
 	unsigned short id; // identification number
@@ -87,14 +90,23 @@ typedef struct
 	struct QUESTION *ques;
 } QUERY;
 
+// Perform a DNS query by sending a packet
 void query(Params *params);
+// Convert address to DNS format
 void DNSFormat (unsigned char* dns,char* host);
+// Read DNS name from the packet
 unsigned char* ReadName (unsigned char* reader,unsigned char* buffer,int* count);
 
+// Get command line arguments
 void getArgs(int argc, char *argv[], Params *params);
+// Get IPv4 reversed format
 char* reversedFormat(char* host);
+// Expand and reverse IPv6 address
 void expandIPv6(const char* compressedIPv6, char* expandedIPv6, size_t expandedIPv6Size);
 
+// Print answers
 void printAnswers(RES_RECORD answers[],Params *params, int i,sockaddr_in a,in_addr,in6_addr);
+// Print answer's info
 void printQuesions(Params *params);
+// Print sent packet info
 void printInfo(DNS_HEADER *dns);

@@ -42,6 +42,7 @@ void getArgs(int argc, char *argv[], Params *params)
 		bool cont = true; // continue arg parsing
 		
 		// set port number to Params structure
+		// print help
 		if(strcmp(argument,"-h") == 0)
 		{
 			printf("dns [-r] [-x] [-6] -s server [-p port] adresa\n");
@@ -54,7 +55,7 @@ void getArgs(int argc, char *argv[], Params *params)
 			if((params->port = atoi(argv[++index])) == 0)
 			{
 				fprintf(stderr,"Port is not a number\n");
-				exit(1);
+				exit(1); // Wrong port type
 			}
 
 			i++;
@@ -441,6 +442,7 @@ char* reversedFormat(char* host)
 	return add;
 }
 
+// Expand and reverse IPv6 address
 void expandIPv6(const char* compressedIPv6, char* expandedIPv6, size_t expandedIPv6Size) {
     char buffer[60];  // Buffer to hold the expanded IPv6 address
     int bufferIndex = 0;
