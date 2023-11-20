@@ -385,7 +385,7 @@ u_char* ReadName(unsigned char* reader, unsigned char* buffer, int* count) {
 */
 void DNSFormat(unsigned char* dns,char* host) 
 {
-	int lock = 0 , i;
+	size_t lock = 0 , i;
 	strcat((char*)host,"."); // Append dot to the hostname
 	
 	// Iterate through the host name characters
