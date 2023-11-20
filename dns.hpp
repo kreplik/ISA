@@ -1,5 +1,9 @@
-#ifndef DNS_H
-#define DNS_H
+/******************************************
+* DESCRIPTION: DNS Resolver
+* AUTHOR: Adam Nieslanik
+* LOGIN: xniesl00
+******************************************/
+
 #include <stdio.h>
 #include <stdlib.h>
 
@@ -7,9 +11,9 @@
 #define IN 1 // Internet
 #define T_NS 2 // NS
 #define T_AAAA 28 // Ipv6
-#define T_CNAME 5 // canonical name
+#define T_CNAME 5 // Canonical name
 #define T_SOA 6 // SOA
-#define T_PTR 12
+#define T_PTR 12 // Reversed
 
 //Constant sized fields of the resource record structure
 #pragma pack(push, 1)
@@ -22,10 +26,10 @@ struct R_DATA
 };
 #pragma pack(pop)
 
-struct in_addr ipv4_addr;
-struct in6_addr ipv6_addr;
-char add[100]; // reversed address
-char expandedIPv6[60];
+struct in_addr ipv4_addr; // Helps with IPv4 address
+struct in6_addr ipv6_addr; // Helps with IPv6 address
+char add[100]; // Reversed IPv4 address
+char expandedIPv6[60]; // Reversed and expanded IPv6 address
 
 //Pointers to resource record contents
 struct RES_RECORD
@@ -59,6 +63,7 @@ struct DNS_HEADER
 	unsigned short add_count; // number of resource entries
 };
 
+// Structure that holds command line parameters
 struct Params {
 	bool recursion = false;
 	int Q_type = T_A;
@@ -83,7 +88,7 @@ typedef struct
 } QUERY;
 
 void query(Params *params);
-void ChangetoDnsNameFormat (unsigned char* dns,char* host);
+void DNSFormat (unsigned char* dns,char* host);
 unsigned char* ReadName (unsigned char* reader,unsigned char* buffer,int* count);
 
 void getArgs(int argc, char *argv[], Params *params);
@@ -93,5 +98,3 @@ void expandIPv6(const char* compressedIPv6, char* expandedIPv6, size_t expandedI
 void printAnswers(RES_RECORD answers[],Params *params, int i,sockaddr_in a,in_addr,in6_addr);
 void printQuesions(Params *params);
 void printInfo(DNS_HEADER *dns);
-
-#endif

@@ -1,12 +1,17 @@
-#include<stdio.h>
-#include<string.h>
-#include<stdlib.h>
-#include<sys/socket.h>
-#include<arpa/inet.h>
-#include<netinet/in.h>
-#include<unistd.h>
+/******************************************
+* DESCRIPTION: DNS Resolver
+* AUTHOR: Adam Nieslanik
+* LOGIN: xniesl00
+******************************************/
+
+#include <stdio.h>
+#include <string.h>
+#include <stdlib.h>
+#include <sys/socket.h>
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <unistd.h>
 #include <netdb.h>
-#include <iostream>
 #include "dns.hpp"
 
 using namespace std;
@@ -164,10 +169,10 @@ void query(Params *params)
 	if(params->reversed){
 
 		// IPv4 reversed address	
-		ChangetoDnsNameFormat(qname , reversedFormat(params->hostname));
+		DNSFormat(qname , reversedFormat(params->hostname));
 	}
 	else{
-		ChangetoDnsNameFormat(qname , params->hostname);
+		DNSFormat(qname , params->hostname);
 	}
 
 	// set question message
@@ -204,18 +209,26 @@ void query(Params *params)
 	printf("Question section (%d)\n",1);
 	printQuesions(params);
 
-	//Start reading answers
+	
+	/* Reading answers
+	* Source: https://www.binarytides.com/dns-query-code-in-c-with-linux-sockets/
+	* Author: Silver Moon
+	*/
+	// Start reading
 	stop=0;
 
+	// Iterate through each answer record
 	for(i=0;i<ntohs(dns->ans_count);i++)
 	{
+		// Read the name from the DNS answer using ReadName function
 		answers[i].name=ReadName(reader,buf,&stop);
 		reader = reader + stop;
 
+		// Read the resource info
 		answers[i].resource = (struct R_DATA*)(reader);
 		reader = reader + sizeof(struct R_DATA);
 
-		if(ntohs(answers[i].resource->type) == 1) //if its an ipv4 address
+		if(ntohs(answers[i].resource->type) == T_A) // Check if it's an IPv4 address
 		{
 			answers[i].rdata = (unsigned char*)malloc(ntohs(answers[i].resource->data_len));
 
@@ -226,10 +239,12 @@ void query(Params *params)
 
 			answers[i].rdata[ntohs(answers[i].resource->data_len)] = '\0';
 
+			// Move the reader past the IPv4 address data
 			reader = reader + ntohs(answers[i].resource->data_len);
 		}
 		else
 		{
+			// If it's not an IPv4 address, use ReadName to get the data
 			answers[i].rdata = ReadName(reader,buf,&stop);
 			reader = reader + stop;
 		}
@@ -238,12 +253,15 @@ void query(Params *params)
 	//read authorities
 	for(i=0;i<ntohs(dns->auth_count);i++)
 	{
+		// Read the name from the DNS answer using ReadName function
 		auth[i].name=ReadName(reader,buf,&stop);
 		reader+=stop;
 
+		// Read the resource info
 		auth[i].resource=(struct R_DATA*)(reader);
 		reader+=sizeof(struct R_DATA);
 
+		// use ReadName to get data
 		auth[i].rdata=ReadName(reader,buf,&stop);
 		reader+=stop;
 	}
@@ -251,23 +269,31 @@ void query(Params *params)
 	//read additional
 	for(i=0;i<ntohs(dns->add_count);i++)
 	{
+		// Read the name from the DNS answer using ReadName function
 		addit[i].name=ReadName(reader,buf,&stop);
 		reader+=stop;
 
+		// Read the resource info
 		addit[i].resource=(struct R_DATA*)(reader);
 		reader+=sizeof(struct R_DATA);
 
-		if(ntohs(addit[i].resource->type)==1)
+		if(ntohs(addit[i].resource->type)==T_A) // Check if it's an IPv4 address
 		{
+			// Allocate memory for the IPv4 address data
 			addit[i].rdata = (unsigned char*)malloc(ntohs(addit[i].resource->data_len));
+			
+			// Copy the IPv4 address data from the answer to the allocated memory
 			for(j=0;j<ntohs(addit[i].resource->data_len);j++)
 			addit[i].rdata[j]=reader[j];
 
 			addit[i].rdata[ntohs(addit[i].resource->data_len)]='\0';
+
+			// Move the reader past the IPv4 address data
 			reader+=ntohs(addit[i].resource->data_len);
 		}
 		else
 		{
+			// use ReadName to get data
 			addit[i].rdata=ReadName(reader,buf,&stop);
 			reader+=stop;
 		}
@@ -298,82 +324,83 @@ void query(Params *params)
 	return;
 }
 
+// Function to read DNS name from the packet
 /*
- * 
- * */
-u_char* ReadName(unsigned char* reader,unsigned char* buffer,int* count)
-{
-	unsigned char *name;
-	unsigned int p=0,jumped=0,offset;
-	int i , j;
+* Source: https://www.binarytides.com/dns-query-code-in-c-with-linux-sockets/
+* Author: Silver Moon
+*/
+u_char* ReadName(unsigned char* reader, unsigned char* buffer, int* count) {
+    *count = 1;
 
-	*count = 1;
-	name = (unsigned char*)malloc(256);
+	// allocate memory for the name
+    unsigned char* name = static_cast<unsigned char*>(malloc(256));
+    name[0] = '\0';
 
-	name[0]='\0';
+    unsigned int p = 0, jumped = 0, offset;
+    int i, j;
 
-	//read the names in DNS format
-	while(*reader!=0)
-	{
-		if(*reader>=192)
-		{
-			offset = (*reader)*256 + *(reader+1) - 49152; //49152 = 11000000 00000000 ;)
-			reader = buffer + offset - 1;
-			jumped = 1; //we have jumped to another location so counting wont go up!
-		}
-		else
-		{
-			name[p++]=*reader;
-		}
+    // Read the names in DNS format
+    while (*reader != 0) {
+        if (*reader >= 192) {
+			// Handle compression: jump to another location
+            offset = (*reader) * 256 + *(reader + 1) - 49152;  // 49152 = 11000000 00000000
+            reader = buffer + offset - 1;
+            jumped = 1;  // We have jumped to another location, so counting won't go up!
+        } else {
+            name[p++] = *reader;
+        }
 
-		reader = reader+1;
+        reader = reader + 1;
 
-		if(jumped==0)
-		{
-			*count = *count + 1; //if we havent jumped to another location then we can count up
-		}
-	}
+        if (jumped == 0) {
+            *count = *count + 1;  // If we haven't jumped to another location, then we can count up
+        }
+    }
 
-	name[p]='\0'; //string complete
-	if(jumped==1)
-	{
-		*count = *count + 1; //number of steps we actually moved forward in the packet
-	}
+    name[p] = '\0';  // String complete
+    if (jumped == 1) {
+        *count = *count + 1;  // Number of steps we actually moved forward in the packet
+    }
 
-	//now convert 3www6google3com0 to www.google.com
-	for(i=0;i<(int)strlen((const char*)name);i++) 
-	{
-		p=name[i];
-		for(j=0;j<(int)p;j++) 
-		{
-			name[i]=name[i+1];
-			i=i+1;
-		}
-		name[i]='.';
-	}
-	name[i-1]='\0'; //remove the last dot
-	return name;
+    // Convert DNS format address to normal format
+    for (i = 0; i < static_cast<int>(strlen(reinterpret_cast<const char*>(name))); i++) {
+        p = name[i];
+        for (j = 0; j < static_cast<int>(p); j++) {
+            name[i] = name[i + 1];
+            i = i + 1;
+        }
+        name[i] = '.';
+    }
+
+    name[i - 1] = '\0';  // Remove the last dot
+    return name;
 }
 
+
 // This will convert address to DNS format
-void ChangetoDnsNameFormat(unsigned char* dns,char* host) 
+/*
+* Source: https://www.binarytides.com/dns-query-code-in-c-with-linux-sockets/
+* Author: Silver Moon
+*/
+void DNSFormat(unsigned char* dns,char* host) 
 {
 	int lock = 0 , i;
-	strcat((char*)host,".");
+	strcat((char*)host,"."); // Append dot to the hostname
 	
+	// Iterate through the host name characters
 	for(i = 0 ; i < strlen((char*)host) ; i++) 
 	{
 		if(host[i]=='.') 
 		{
-			*dns++ = i-lock;
+			*dns++ = i-lock; // Write the label length
 			for(;lock<i;lock++) 
 			{
-				*dns++=host[lock];
+				*dns++=host[lock]; // Copy characters of the label
 			}
-			lock++; //or lock=i+1;
+			lock++; // Move to the next label
 		}
 	}
-	*dns++='\0';
+	*dns++='\0'; // end of the formatted name
 }
 
 // get IPv4 reversed format
@@ -417,10 +444,11 @@ char* reversedFormat(char* host)
 void expandIPv6(const char* compressedIPv6, char* expandedIPv6, size_t expandedIPv6Size) {
     char buffer[60];  // Buffer to hold the expanded IPv6 address
     int bufferIndex = 0;
-	char tmpBuffer[60];
-	char reversedBuffer[60];
-	char address[1024];
+	char tmpBuffer[60]; // For storing characters
+	char reversedBuffer[60]; // Reversed address
+	char address[1024]; // Final address
 
+	// Help with adding leading zeros
 	bool colon = false;
 
 	int colonCnt = 0;
@@ -428,6 +456,7 @@ void expandIPv6(const char* compressedIPv6, char* expandedIPv6, size_t expandedI
 
 	int segmentCnt = 0;
 
+	// Count colons
 	for (size_t i = 0; i < strlen(compressedIPv6); ++i)
 	{
 		if(compressedIPv6[i] == ':')
@@ -442,6 +471,7 @@ void expandIPv6(const char* compressedIPv6, char* expandedIPv6, size_t expandedI
         if (compressedIPv6[i] == ':') {
 			i++;
 			currentColon++;
+			// Count character in one segment between colons
 			while(compressedIPv6[i] != ':' && i < strlen(compressedIPv6))
 			{
 				tmpBuffer[segmentCnt] = compressedIPv6[i];
@@ -450,16 +480,19 @@ void expandIPv6(const char* compressedIPv6, char* expandedIPv6, size_t expandedI
 				colon = true;
 			}
 			
+			// two colons
 			if(compressedIPv6[i] == ':')
 			{
 				currentColon++;
 			}
 		}
 		else{
+			// Copy character
 			buffer[bufferIndex++] = compressedIPv6[i];
 		}
 
 
+		// If got last colon, add missing zeros
 		if(currentColon == colonCnt){
 			for(int cnt = 0;cnt < 4*(8-colonCnt);cnt++)
 			{
@@ -468,6 +501,7 @@ void expandIPv6(const char* compressedIPv6, char* expandedIPv6, size_t expandedI
 
 		}
 
+		// Add leading zeros after colon to 4-character segment
 		if(segmentCnt < 4 && colon == true)
 		{
 			for(int cnt = 0; cnt < 4 - segmentCnt; cnt++)
@@ -484,8 +518,9 @@ void expandIPv6(const char* compressedIPv6, char* expandedIPv6, size_t expandedI
 		
     }
 
-	buffer[bufferIndex] = '\0';
+	buffer[bufferIndex] = '\0'; // End buffer
 
+	// Reverse the buffer
 	int bufferY = bufferIndex -1;
 	int y = 0;
 	while(bufferY >= 0)
@@ -499,7 +534,7 @@ void expandIPv6(const char* compressedIPv6, char* expandedIPv6, size_t expandedI
 
 	int i = 0;
 	int bufferI = 0;
-
+	// Add dot between each character
 	while(i < (bufferIndex*2)-1)
 	{
 		address[i] = reversedBuffer[bufferI];
@@ -514,9 +549,10 @@ void expandIPv6(const char* compressedIPv6, char* expandedIPv6, size_t expandedI
 	address[i] = '\0';
     // Copy the expanded IPv6 address to the provided output buffer
     snprintf(expandedIPv6, sizeof(address), "%s", address);
-	strcat(expandedIPv6,"ip6.arpa");
+	strcat(expandedIPv6,"ip6.arpa"); // Append ip6.arpa to the address
 }
 
+// Print answer's info
 void printInfo(DNS_HEADER *dns)
 {
 	if(dns->aa == 1){
@@ -543,6 +579,7 @@ void printInfo(DNS_HEADER *dns)
 	}
 }
 
+// Print question's info
 void printQuesions(Params *params)
 {
 	if(params->reversed){
@@ -573,6 +610,7 @@ void printQuesions(Params *params)
 	printf("IN\n");
 }
 
+// Print answer's name, type, class, TTL and data
 void printAnswers(RES_RECORD answers[],Params *params, int i,sockaddr_in a,in_addr ipv4_addr,in6_addr ipv6_addr)
 {
 	int type;
@@ -616,16 +654,13 @@ void printAnswers(RES_RECORD answers[],Params *params, int i,sockaddr_in a,in_ad
 				p=(long*)answers[i].rdata;
 				a.sin_addr.s_addr=(*p);
 				printf("%s",inet_ntoa(a.sin_addr));
-			
-			printf("\n");
 		}
 
 		if( ntohs(answers[i].resource->type) == T_AAAA) //IPv6 address
 		{	
 			char ipv6Str[INET6_ADDRSTRLEN];
 			inet_ntop(AF_INET6, answers[i].rdata, ipv6Str, INET6_ADDRSTRLEN);
-			printf("%s\n",ipv6Str);
-			
+			printf("%s",ipv6Str);		
 		}
 
 		if( ntohs(answers[i].resource->type) == T_CNAME)
@@ -634,22 +669,16 @@ void printAnswers(RES_RECORD answers[],Params *params, int i,sockaddr_in a,in_ad
 			p=(long*)answers[i].rdata;
 			a.sin_addr.s_addr=(*p);
 			printf("%s.",answers[i].rdata);
-			
-			printf("\n");
 		}
 
-		if( ntohs(answers[i].resource->type) == T_PTR) //IPv4 address
+		if( ntohs(answers[i].resource->type) == T_PTR)
 		{
 			printf("%s.",answers[i].rdata);
-			
-			printf("\n");
 		}
 
-		if( ntohs(answers[i].resource->type) == T_NS) //IPv4 address
+		if( ntohs(answers[i].resource->type) == T_NS)
 		{
-			printf("%s.",answers[i].rdata);
-			
-			printf("\n");
+			printf("%s.",answers[i].rdata);	
 		}
-
+	printf("\n");
 }
