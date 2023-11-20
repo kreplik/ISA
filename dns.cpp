@@ -125,6 +125,14 @@ void query(Params *params)
 	// creating socket for UDP packet
 	s = socket(AF_INET , SOCK_DGRAM , IPPROTO_UDP);
 
+	// IPv6 server's address not supported
+	struct sockaddr_in6 sa;
+    if(inet_pton(AF_INET6, params->dns_server, &(sa.sin6_addr)))
+	{
+		fprintf(stderr,"Nepodporovaná adresa IPv6\n");
+		exit(1);
+	}
+	
 	// get server's address passed in command line
 	struct hostent *host_info = gethostbyname(params->dns_server);
 	if (host_info == NULL) {

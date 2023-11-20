@@ -24,7 +24,8 @@ Na standardní výstup vypište informaci o tom, zda je získaná odpověď auto
 *	-h Vypíše nápovědu.
 
 ### Nedostatky
-* Mezi hlavní nedostatky implementace patří nefunkční konverze IPv6 adresy pomocí funkce expandIPv6()
+* Mezi hlavní nedostatky implementace patří nefunkční konverze IPv6 adresy pomocí funkce expandIPv6().
+* Program nepodporuje IPv6 adresu serveru
 
 ### Seznam odevzdaných souborů v adresáří xniesl00.tar
 * Makefile
