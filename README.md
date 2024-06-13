@@ -13,7 +13,7 @@ Na standardní výstup vypište informaci o tom, zda je získaná odpověď auto
 
 ### Spuštění
 
-<b>./dns [-r] [-x] [-6] -s server [-p port] adresa<b>
+<b>./dns [-r] [-x] [-6] -s server [-p port] adresa</b>
 
 *	-r Volitelný přepínač, který určuje, že je vyžadovaná rekurze.
 *	-x Volitelný přepínač, který určuje, že se má zaslat reverzní dotaz
