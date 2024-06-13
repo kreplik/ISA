@@ -1,4 +1,4 @@
-# Projekt ISA
+# SÍŤOVÉ APLIKACE A SPRÁVA SÍTÍ
 ### Autor: Adam Nieslanik
 ### Login: xniesl00
 ### 20.11.2023
